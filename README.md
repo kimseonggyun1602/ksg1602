@@ -483,3 +483,86 @@ ros2 topic hz /scan
 Gazebo wheel odom이 이미 정확하면 정상적으로 발생할 수 있습니다. 먼저 6A의
 wheel odom + IMU baseline을 사용하세요. ICP는 wheel slip 또는 odometry
 degradation을 넣은 비교 실험에서 보수적인 covariance와 함께 사용하세요.
+
+## 14. 선택 사항: 알고리즘 내부 소스코드 수정
+
+위의 기본 실행 방법은 Ubuntu에 설치된 ROS 패키지를 사용합니다.
+
+```text
+/opt/ros/jazzy
+```
+
+YAML 파라미터만 튜닝할 때는 추가 작업이 필요하지 않습니다. EKF 수식,
+scan matching, loop closure, graph optimization 등 패키지 내부 알고리즘을
+직접 수정하려면 공식 소스코드를 workspace에 추가한 뒤 다시 빌드하세요.
+
+### 공식 소스코드 추가
+
+```bash
+cd ~/ksg_ws/src
+
+git clone -b jazzy-devel \
+  https://github.com/cra-ros-pkg/robot_localization.git
+
+git clone -b jazzy \
+  https://github.com/SteveMacenski/slam_toolbox.git
+```
+
+### overlay workspace 다시 빌드
+
+```bash
+cd ~/ksg_ws
+source /opt/ros/jazzy/setup.bash
+
+rosdep install --from-paths src --ignore-src -r -y
+
+colcon build \
+  --allow-overriding \
+  mecanum_drive_controller \
+  robot_localization \
+  slam_toolbox
+
+source install/setup.bash
+```
+
+source build가 우선 적용되는지 확인합니다.
+
+```bash
+ros2 pkg prefix robot_localization
+ros2 pkg prefix slam_toolbox
+```
+
+정상적으로 overlay가 적용되면 `/opt/ros/jazzy` 대신 다음과 유사한 경로가
+출력됩니다.
+
+```text
+/home/<사용자명>/ksg_ws/install/robot_localization
+/home/<사용자명>/ksg_ws/install/slam_toolbox
+```
+
+### 주요 수정 위치
+
+```text
+robot_localization/src/ekf.cpp
+  EKF prediction 및 correction 수식
+
+robot_localization/src/filter_base.cpp
+  공통 상태 벡터, covariance, process noise 처리
+
+slam_toolbox/lib/karto_sdk/src/Mapper.cpp
+  scan matching, loop closure, pose graph 관련 처리
+
+slam_toolbox/solvers/
+  graph optimization solver 구현
+```
+
+권장 연구 순서는 다음과 같습니다.
+
+```text
+1. apt 설치본으로 baseline 재현
+2. 공식 소스코드를 추가하고 source build
+3. source build에서도 baseline 결과가 동일한지 확인
+4. YAML 파라미터 튜닝
+5. 필요한 C++ 내부 알고리즘 수정
+6. 기존 baseline과 map 및 trajectory 지표 비교
+```
