@@ -1,0 +1,65 @@
+ekf_filter_node:
+  ros__parameters:
+    frequency: 50.0
+    sensor_timeout: 0.2
+    two_d_mode: true
+    publish_tf: true
+    publish_acceleration: false
+    use_control: false
+    use_sim_time: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    # Input 0: degraded mecanum-wheel odometry.
+    odom0: /wheel_odom/degraded
+    odom0_config: [
+      true,  true,  false,
+      false, false, true,
+      true,  true,  false,
+      false, false, true,
+      false, false, false
+    ]
+    odom0_differential: false
+    odom0_relative: false
+    odom0_queue_size: 10
+
+    # Input 1: IMU yaw rate only. Absolute yaw stays disabled.
+    imu0: /imu/data
+    imu0_config: [
+      false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false
+    ]
+    imu0_differential: false
+    imu0_relative: true
+    imu0_remove_gravitational_acceleration: false
+    imu0_queue_size: 10
+
+    # Input 2: RTAB-Map ICP LiDAR odometry increments with conservative covariance.
+    # Differential mode avoids feeding accumulated scan-odometry drift as truth.
+    odom1: /icp/odom
+    odom1_config: [
+      true,  true,  false,
+      false, false, true,
+      false, false, false,
+      false, false, false,
+      false, false, false
+    ]
+    odom1_differential: true
+    odom1_relative: false
+    odom1_queue_size: 10
+
+    # Diagonal Q matrix: x, y, z, roll, pitch, yaw,
+    # vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az.
+    process_noise_covariance: [
+      0.08, 0.08, 0.06,
+      0.03, 0.03, 0.12,
+      0.04, 0.10, 0.04,
+      0.01, 0.01, 0.06,
+      0.01, 0.01, 0.015
+    ]

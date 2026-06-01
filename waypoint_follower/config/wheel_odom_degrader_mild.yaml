@@ -1,0 +1,19 @@
+wheel_odom_degrader:
+  ros__parameters:
+    enabled: true
+    use_sim_time: true
+
+    input_topic: /mecanum_drive_controller/odom
+    output_topic: /wheel_odom/degraded
+
+    # Mild synthetic mecanum-wheel slip scenario.
+    linear_x_scale: 0.99
+    linear_y_scale: 0.92
+    yaw_scale: 1.01
+    yaw_bias_rad_per_meter: 0.003
+    translation_noise_std_per_sqrt_meter: 0.005
+    yaw_noise_std_rad_per_sqrt_meter: 0.004
+    random_seed: 42
+
+    diagnostics_topic: /wheel_odom_degrader/status
+    diagnostics_publish_period_sec: 1.0

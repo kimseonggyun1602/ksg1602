@@ -1,0 +1,51 @@
+ekf_filter_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 30.0
+    sensor_timeout: 0.2
+    two_d_mode: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    publish_tf: true
+    publish_acceleration: false
+
+    # Wheel odometry supplies smooth body-frame velocity estimates.
+    odom0: /mecanum_drive_controller/odom
+    odom0_config: [
+      false, false, false,
+      false, false, false,
+      true,  true,  false,
+      false, false, false,
+      false, false, false
+    ]
+    odom0_queue_size: 10
+
+    # IMU supplies absolute yaw and yaw rate.
+    imu0: /imu/data
+    imu0_config: [
+      false, false, false,
+      false, false, true,
+      false, false, false,
+      false, false, true,
+      false, false, false
+    ]
+    imu0_queue_size: 20
+    imu0_remove_gravitational_acceleration: true
+
+    # ICP LiDAR odometry supplies relative planar pose increments.
+    # Differential mode avoids treating accumulated ICP drift as ground truth.
+    odom1: /icp/odom
+    odom1_config: [
+      true,  true,  false,
+      false, false, true,
+      false, false, false,
+      false, false, false,
+      false, false, false
+    ]
+    odom1_differential: true
+    odom1_relative: false
+    odom1_queue_size: 10

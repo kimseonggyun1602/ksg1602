@@ -1,0 +1,46 @@
+wheel_odom_degrader:
+  ros__parameters:
+    # false: publish the original wheel odometry unchanged.
+    # true: publish deterministic, degraded wheel odometry.
+    enabled: true
+    use_sim_time: true
+
+    input_topic: /mecanum_drive_controller/odom
+    output_topic: /wheel_odom/degraded
+
+    # Strong synthetic mecanum-wheel slip stress test.
+    # A scale below 1.0 means that wheel odometry underestimates motion.
+    linear_x_scale: 0.97
+    linear_y_scale: 0.80
+    yaw_scale: 1.03
+    yaw_bias_rad_per_meter: 0.010
+
+    # Deterministic Gaussian noise. Standard deviation grows with sqrt(distance).
+    translation_noise_std_per_sqrt_meter: 0.010
+    yaw_noise_std_rad_per_sqrt_meter: 0.008
+    random_seed: 42
+
+    # Two short, deterministic slip events measured along the driven distance.
+    # These emulate brief loss of wheel traction during the same replayed run.
+    slip_events_enabled: true
+    slip_event_start_m: [4.0, 10.0]
+    slip_event_end_m: [5.5, 11.5]
+    slip_event_linear_x_scale: 0.70
+    slip_event_linear_y_scale: 0.45
+    slip_event_yaw_scale: 1.18
+    slip_event_yaw_bias_rad_per_meter: 0.060
+    slip_event_noise_multiplier: 2.5
+
+    # Gazebo publishes zero wheel-odom covariance. Use a conservative baseline
+    # for every run, including clean passthrough. Mecanum lateral motion is less
+    # reliable than forward motion, so y variance is intentionally larger.
+    pose_x_variance_floor: 0.010
+    pose_y_variance_floor: 0.040
+    pose_yaw_variance_floor: 0.020
+    twist_x_variance_floor: 0.010
+    twist_y_variance_floor: 0.040
+    twist_yaw_variance_floor: 0.020
+    slip_event_covariance_multiplier: 4.0
+
+    diagnostics_topic: /wheel_odom_degrader/status
+    diagnostics_publish_period_sec: 1.0
