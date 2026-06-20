@@ -179,6 +179,10 @@ class SavedResultViewer(Node):
         if not os.path.isfile(csv_path):
             return self.make_path([])
         rows = read_rows(csv_path)
+        if not rows:
+            self.get_logger().warning(
+                f'Optional odometry CSV has no data rows: {csv_path}')
+            return self.make_path([])
         xy = np.asarray([
             [float(row['x_m']), float(row['y_m'])] for row in rows])
         if alignment is not None:
