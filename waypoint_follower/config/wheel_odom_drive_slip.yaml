@@ -1,0 +1,45 @@
+wheel_odom_degrader:
+  ros__parameters:
+    enabled: true
+    use_sim_time: true
+
+    input_topic: /mecanum_drive_controller/odom
+    output_topic: /wheel_odom/slip
+
+    # Synthetic drive-slip model: the virtual encoder overestimates body
+    # motion because the wheels rotate farther than the chassis travels.
+    # Lateral mecanum motion is intentionally less reliable than forward motion.
+    linear_x_scale: 1.03
+    linear_y_scale: 1.20
+    yaw_scale: 1.01
+    yaw_bias_rad_per_meter: 0.003
+
+    # Repeatable random walk applied to incremental wheel odometry.
+    translation_noise_std_per_sqrt_meter: 0.005
+    yaw_noise_std_rad_per_sqrt_meter: 0.004
+    random_seed: 42
+
+    # Brief high-slip intervals along the same driven trajectory.
+    # Effective event scales are base_scale * event_scale:
+    # x=1.154, y=1.740, yaw=1.111.
+    slip_events_enabled: true
+    slip_event_start_m: [4.0, 10.0]
+    slip_event_end_m: [5.5, 11.5]
+    slip_event_linear_x_scale: 1.12
+    slip_event_linear_y_scale: 1.45
+    slip_event_yaw_scale: 1.10
+    slip_event_yaw_bias_rad_per_meter: 0.025
+    slip_event_noise_multiplier: 2.0
+
+    # Variances reported to robot_localization. Wheel lateral velocity is less
+    # trustworthy, and every variance is increased during a slip event.
+    pose_x_variance_floor: 0.030
+    pose_y_variance_floor: 0.120
+    pose_yaw_variance_floor: 0.050
+    twist_x_variance_floor: 0.030
+    twist_y_variance_floor: 0.120
+    twist_yaw_variance_floor: 0.050
+    slip_event_covariance_multiplier: 3.0
+
+    diagnostics_topic: /wheel_odom_slip/status
+    diagnostics_publish_period_sec: 1.0

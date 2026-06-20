@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'waypoint_follower = waypoint_follower.waypoint_follower_node:main',
             'gz_pose_tf_publisher = waypoint_follower.gz_pose_tf_publisher:main',
+            'gt_pose_to_tf = waypoint_follower.gt_pose_to_tf_node:main',
             'keyboard_teleop = waypoint_follower.keyboard_teleop_node:main',
             'map_evaluator = waypoint_follower.map_evaluator:main',
             'map_trajectory_comparison = waypoint_follower.map_trajectory_comparison:main',
