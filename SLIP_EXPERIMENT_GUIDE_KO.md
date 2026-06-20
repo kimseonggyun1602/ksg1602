@@ -130,3 +130,48 @@ SLAM Path: /evaluation/slam_path (red)
 
 단일 실행의 초기 결과이므로 최종 발표에서는 여러 seed와 slip 강도로 반복한
 평균 및 표준편차를 함께 제시하는 것이 좋습니다.
+
+## 저장된 Map과 Trajectory를 RViz에서 비교
+
+각 결과 폴더에는 다음 파일이 있어야 합니다.
+
+```text
+map.pgm
+map.yaml
+trajectory.csv
+localization_metrics.json
+```
+
+공통 viewer는 다음 요소를 같은 world 좌표계에 표시합니다.
+
+```text
+회색: Gazebo reference map
+파란색: slam_toolbox mapping 결과
+초록색: Gazebo ground-truth trajectory
+빨간색: localization + SLAM 최종 trajectory
+```
+
+### Slip Wheel only 결과
+
+```bash
+ros2 launch waypoint_follower view_slip_result.launch.py \
+  results_dir:=$HOME/ksg_results/slip_wheel_only
+```
+
+### Slip Wheel + IMU 결과
+
+```bash
+ros2 launch waypoint_follower view_slip_result.launch.py \
+  results_dir:=$HOME/ksg_results/slip_wheel_imu
+```
+
+### Slip Wheel + IMU + ICP 결과
+
+```bash
+ros2 launch waypoint_follower view_slip_result.launch.py \
+  results_dir:=$HOME/ksg_results/slip_wheel_imu_icp
+```
+
+SLAM map과 trajectory는 localization metrics의 SE(2) alignment를 사용하여
+Gazebo world 좌표계에 정렬됩니다. 따라서 단순 원점 차이가 아니라 경로 오차와
+지도 벽 형상의 차이를 직접 비교할 수 있습니다.
