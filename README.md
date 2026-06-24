@@ -12,17 +12,67 @@ TF를 추정합니다.
 
 ## 처음 한 번만: 설치 및 빌드
 
+준비 환경:
+
+```text
+Ubuntu 24.04
+인터넷 연결
+sudo 권한
+```
+
+### 1. ROS 2와 필수 패키지 설치
+
+Ubuntu 터미널에서 실행합니다.
+
 ```bash
 curl -fsSL \
   https://raw.githubusercontent.com/kimseonggyun1602/ksg1602/main/scripts/install_ubuntu_24_04_ros2_jazzy.sh \
   -o /tmp/install_ksg_ros2.sh
 bash /tmp/install_ksg_ros2.sh
+```
 
+이 스크립트가 다음 패키지를 설치합니다.
+
+```text
+ROS 2 Jazzy Desktop
+Gazebo Harmonic 및 ros_gz
+robot_localization
+RTAB-Map ROS
+slam_toolbox
+Nav2 map server
+colcon 및 rosdep
+```
+
+### 2. GitHub 저장소 다운로드
+
+```bash
 mkdir -p ~/ksg_ws/src
 git clone https://github.com/kimseonggyun1602/ksg1602.git \
   ~/ksg_ws/src/yahboom_rosmaster
+```
+
+### 3. Workspace 빌드
+
+```bash
 bash ~/ksg_ws/src/yahboom_rosmaster/scripts/build_ksg_ws.sh
 ```
+
+빌드가 끝나면 새 터미널을 열고 확인합니다.
+
+### 4. 설치 및 빌드 확인
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ksg_ws/install/setup.bash
+
+ros2 pkg prefix waypoint_follower
+ros2 pkg prefix robot_localization
+ros2 pkg prefix rtabmap_odom
+ros2 pkg prefix slam_toolbox
+```
+
+네 명령 모두 경로가 출력되면 준비가 끝난 것입니다. 아래 `터미널 1`부터
+순서대로 실행합니다.
 
 ## 실행 순서
 
