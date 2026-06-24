@@ -10,37 +10,26 @@ TF를 추정합니다.
 이 TF와 LiDAR scan을 `slam_toolbox`에 입력하여 실시간 map과 pose를
 생성합니다.
 
-## 처음 한 번만: 설치 및 빌드
+## 설치 및 빌드
 
-준비 환경:
+Ubuntu 24.04와 ROS 2 Jazzy가 설치된 상태를 기준으로 합니다.
 
-```text
-Ubuntu 24.04
-인터넷 연결
-sudo 권한
-```
-
-### 1. ROS 2와 필수 패키지 설치
-
-Ubuntu 터미널에서 실행합니다.
+### 1. Gazebo와 ROS 패키지 설치
 
 ```bash
-curl -fsSL \
-  https://raw.githubusercontent.com/kimseonggyun1602/ksg1602/main/scripts/install_ubuntu_24_04_ros2_jazzy.sh \
-  -o /tmp/install_ksg_ros2.sh
-bash /tmp/install_ksg_ros2.sh
-```
-
-이 스크립트가 다음 패키지를 설치합니다.
-
-```text
-ROS 2 Jazzy Desktop
-Gazebo Harmonic 및 ros_gz
-robot_localization
-RTAB-Map ROS
-slam_toolbox
-Nav2 map server
-colcon 및 rosdep
+sudo apt update
+sudo apt install -y \
+  python3-colcon-common-extensions \
+  python3-rosdep \
+  ros-jazzy-ros-gz \
+  ros-jazzy-ros2-control \
+  ros-jazzy-ros2-controllers \
+  ros-jazzy-gz-ros2-control \
+  ros-jazzy-rmw-cyclonedds-cpp \
+  ros-jazzy-robot-localization \
+  ros-jazzy-rtabmap-ros \
+  ros-jazzy-slam-toolbox \
+  ros-jazzy-nav2-map-server
 ```
 
 ### 2. GitHub 저장소 다운로드
@@ -51,28 +40,23 @@ git clone https://github.com/kimseonggyun1602/ksg1602.git \
   ~/ksg_ws/src/yahboom_rosmaster
 ```
 
-### 3. Workspace 빌드
-
-```bash
-bash ~/ksg_ws/src/yahboom_rosmaster/scripts/build_ksg_ws.sh
-```
-
-빌드가 끝나면 새 터미널을 열고 확인합니다.
-
-### 4. 설치 및 빌드 확인
+### 3. Workspace 의존성 설치 및 빌드
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source ~/ksg_ws/install/setup.bash
+cd ~/ksg_ws
 
-ros2 pkg prefix waypoint_follower
-ros2 pkg prefix robot_localization
-ros2 pkg prefix rtabmap_odom
-ros2 pkg prefix slam_toolbox
+sudo rosdep init 2>/dev/null || true
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+
+colcon build --symlink-install \
+  --allow-overriding mecanum_drive_controller
+
+source ~/ksg_ws/install/setup.bash
 ```
 
-네 명령 모두 경로가 출력되면 준비가 끝난 것입니다. 아래 `터미널 1`부터
-순서대로 실행합니다.
+빌드가 완료되면 아래 `터미널 1`부터 순서대로 실행합니다.
 
 ## 실행 순서
 
