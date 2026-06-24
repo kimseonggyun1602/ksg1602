@@ -1,76 +1,146 @@
-# Gazebo Wheel Odom + IMU + ICP EKF + slam_toolbox
+# Gazebo + robot_localization + slam_toolbox
 
-Ubuntu 24.04와 ROS 2 Jazzy에서 ROSMASTER X3 메카넘 로봇을 Gazebo로
-시뮬레이션하고, `robot_localization`과 `slam_toolbox`로 위치 추정 및 2D SLAM을
-재현하는 저장소입니다.
+## 개요
+
+Gazebo에서 생성한 wheel odometry, IMU, LiDAR scan topic을 ROS 2로 전달합니다.
+LiDAR scan으로부터 ICP LiDAR odometry를 생성하고, wheel odometry, IMU, ICP
+LiDAR odometry를 `robot_localization`의 EKF에 입력하여 로봇의 위치 TF를
+추정합니다.
+
+이 TF와 LiDAR scan을 `slam_toolbox`에 입력하여 실시간 map과 pose를
+생성합니다.
+
+전체 실행은 두 단계입니다.
 
 ```text
-Gazebo
-  /mecanum_drive_controller/odom --+
-  /imu/data -----------------------+--> robot_localization EKF
-  /scan -> RTAB-Map ICP -> /icp/odom --+   -> /odometry/filtered
-                                           -> TF: odom -> base_footprint
-
-  /scan + /tf_static + EKF TF
-        -> slam_toolbox
-        -> /map, /pose, TF: map -> odom
+1. Gazebo topics -> robot_localization -> EKF TF
+2. /scan + EKF TF -> slam_toolbox -> /map + pose
 ```
 
-## 처음 시작하기
+## 처음 한 번만: 설치
 
-ROS 2가 전혀 설치되지 않은 Ubuntu 24.04부터 시작하는 전체 절차는 아래 문서에
-정리되어 있습니다.
-
-**[Ubuntu 초기 상태부터 SLAM 실행까지 A-to-Z 가이드](docs/INSTALL_AND_RUN_KO.md)**
-
-설치는 다음 세 단계로 시작할 수 있습니다.
+Ubuntu 24.04 터미널에서 실행합니다.
 
 ```bash
-# 1. ROS 2 Jazzy와 필수 패키지 설치
 curl -fsSL \
   https://raw.githubusercontent.com/kimseonggyun1602/ksg1602/main/scripts/install_ubuntu_24_04_ros2_jazzy.sh \
   -o /tmp/install_ksg_ros2.sh
 bash /tmp/install_ksg_ros2.sh
 
-# 2. 저장소 다운로드
 mkdir -p ~/ksg_ws/src
 git clone https://github.com/kimseonggyun1602/ksg1602.git \
   ~/ksg_ws/src/yahboom_rosmaster
-
-# 3. 워크스페이스 빌드
 bash ~/ksg_ws/src/yahboom_rosmaster/scripts/build_ksg_ws.sh
 ```
 
-새 터미널마다 다음 두 줄을 실행합니다.
+## 1단계: Gazebo + robot_localization
+
+**터미널 1**
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 source ~/ksg_ws/install/setup.bash
+ros2 launch waypoint_follower gazebo_robot_localization.launch.py
 ```
 
-## 주요 입출력
+실행 파일:
 
-| 단계 | 입력 | 출력 |
-|---|---|---|
-| Gazebo | `/mecanum_drive_controller/cmd_vel` | Wheel odom, IMU, LaserScan, static TF |
-| ICP odometry | `/scan` | `/icp/odom_raw` |
-| EKF | Wheel odom + IMU + `/icp/odom` | `/odometry/filtered`, `odom -> base_footprint` |
-| slam_toolbox | `/scan` + TF | `/map`, `/pose`, `map -> odom` |
+```text
+waypoint_follower/launch/gazebo_robot_localization.launch.py
+```
 
-## 주요 설정 파일
+데이터 흐름:
+
+```text
+Gazebo
+  /mecanum_drive_controller/odom --+
+  /imu/data -----------------------+--> robot_localization EKF
+  /scan -> ICP -> /icp/odom -------+        |
+                                            +--> /odometry/filtered
+                                            +--> TF: odom -> base_footprint
+```
+
+EKF 설정 파일:
 
 ```text
 waypoint_follower/config/ekf_wheel_imu_icp_basic.yaml
-waypoint_follower/waypoint_follower/odom_covariance_scaler_node.py
-yahboom_rosmaster_gazebo/config/ros_gz_bridge.yaml
-yahboom_rosmaster_gazebo/worlds/factory_map_10m.world
 ```
 
-## 주의사항
+정상 출력 확인:
 
-- Gazebo 실행 시 `enable_odom_tf:=false`를 사용합니다. 최종
-  `odom -> base_footprint` TF는 EKF 하나만 발행해야 합니다.
-- Wheel+IMU 기준 실험과 Wheel+IMU+ICP 실험의 EKF를 동시에 실행하지 마세요.
-- 이상적인 Gazebo wheel odom에서는 ICP 추가가 반드시 성능을 높이지 않습니다.
-  ICP 효과는 wheel slip 또는 encoder 오차가 있는 조건에서 비교하는 것이 적절합니다.
-- 저장소의 라이선스와 각 외부 ROS 패키지의 라이선스를 함께 확인하세요.
+```bash
+ros2 topic echo /odometry/filtered --once
+ros2 run tf2_ros tf2_echo odom base_footprint
+```
+
+## 2단계: slam_toolbox
+
+1단계를 켜둔 상태에서 **터미널 2**를 엽니다.
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ksg_ws/install/setup.bash
+ros2 launch waypoint_follower slam_from_robot_localization.launch.py
+```
+
+실행 파일:
+
+```text
+waypoint_follower/launch/slam_from_robot_localization.launch.py
+```
+
+데이터 흐름:
+
+```text
+/scan
+TF: odom -> base_footprint
+TF: base_footprint -> laser_frame
+              |
+              +--> slam_toolbox
+                     +--> /map
+                     +--> TF: map -> odom
+                     +--> pose: map -> base_footprint
+```
+
+정상 출력 확인:
+
+```bash
+ros2 topic echo /map --once
+ros2 run tf2_ros tf2_echo map base_footprint
+```
+
+## 로봇 조종
+
+**터미널 3**
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ksg_ws/install/setup.bash
+ros2 run waypoint_follower keyboard_teleop \
+  --ros-args \
+  -p max_linear_vel:=0.6 \
+  -p max_angular_vel:=1.5
+```
+
+방향키로 움직이면 RViz에 지도가 생성됩니다.
+
+## 지도 저장
+
+**터미널 4**
+
+```bash
+source /opt/ros/jazzy/setup.bash
+mkdir -p ~/ksg_results/live_slam
+ros2 run nav2_map_server map_saver_cli \
+  -f ~/ksg_results/live_slam/map
+```
+
+저장 위치:
+
+```text
+~/ksg_results/live_slam/map.pgm
+~/ksg_results/live_slam/map.yaml
+```
+
+상세 설치 및 오류 해결은
+[상세 가이드](docs/INSTALL_AND_RUN_KO.md)를 참고하세요.
